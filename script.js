@@ -1,4 +1,7 @@
 let highestZ = 1;
+let audioPlayed = false; // Flag to check if audio has been played
+const audioElement = document.getElementById('background-audio'); // Get the audio element
+
 class Paper {
   holdingPaper = false;
   mouseTouchX = 0;
@@ -13,6 +16,7 @@ class Paper {
   currentPaperX = 0;
   currentPaperY = 0;
   rotating = false;
+
   init(paper) {
     document.addEventListener('mousemove', (e) => {
       if (!this.rotating) {
@@ -27,8 +31,9 @@ class Paper {
       const dirNormalizedX = dirX / dirLength;
       const dirNormalizedY = dirY / dirLength;
       const angle = Math.atan2(dirNormalizedY, dirNormalizedX);
-      let degrees = 180 * angle / Math.PI;
+      let degrees = (180 * angle) / Math.PI;
       degrees = (360 + Math.round(degrees)) % 360;
+
       if (this.rotating) {
         this.rotation = degrees;
       }
@@ -41,30 +46,41 @@ class Paper {
         this.prevMouseY = this.mouseY;
         paper.style.transform = `translateX(${this.currentPaperX}px) translateY(${this.currentPaperY}px) rotateZ(${this.rotation}deg)`;
       }
-    })
+    });
+
     paper.addEventListener('mousedown', (e) => {
-      if (this.holdingPaper) return;
-      this.holdingPaper = true;
-      paper.style.zIndex = highestZ;
-      highestZ += 1;
-      if (e.button === 0) {
-        this.mouseTouchX = this.mouseX;
-        this.mouseTouchY = this.mouseY;
-        this.prevMouseX = this.mouseX;
-        this.prevMouseY = this.mouseY;
-      }
-      if (e.button === 2) {
-        this.rotating = true;
+      if (!this.holdingPaper) {
+        this.holdingPaper = true;
+        paper.style.zIndex = highestZ;
+        highestZ += 1;
+
+        // Play the audio if it hasn't been played yet
+        if (!audioPlayed) {
+          audioElement.play();
+          audioPlayed = true; // Set the flag to true to prevent re-playing
+        }
+
+        if (e.button === 0) {
+          this.mouseTouchX = this.mouseX;
+          this.mouseTouchY = this.mouseY;
+          this.prevMouseX = this.mouseX;
+          this.prevMouseY = this.mouseY;
+        }
+        if (e.button === 2) {
+          this.rotating = true;
+        }
       }
     });
+
     window.addEventListener('mouseup', () => {
       this.holdingPaper = false;
       this.rotating = false;
     });
   }
 }
+
 const papers = Array.from(document.querySelectorAll('.paper'));
-papers.forEach(paper => {
+papers.forEach((paper) => {
   const p = new Paper();
   p.init(paper);
 });
