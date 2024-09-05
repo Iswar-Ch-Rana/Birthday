@@ -1,6 +1,9 @@
 let highestZ = 1;
-let audioPlayed = false; // Flag to check if audio has been played
-const audioElement = document.getElementById('background-audio'); // Get the audio element
+let audioPlayed = false; // Flag to track if the audio has been played
+
+// Initialize the audio element
+const audio = new Audio('song/Pehla Pyaar - Kabir Singh.mp3');
+audio.loop = true; // Set to loop if you want it to play continuously
 
 class Paper {
   holdingPaper = false;
@@ -18,15 +21,18 @@ class Paper {
   rotating = false;
 
   init(paper) {
-    document.addEventListener('mousemove', (e) => {
+    const moveHandler = (e) => {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
       if (!this.rotating) {
-        this.mouseX = e.clientX;
-        this.mouseY = e.clientY;
+        this.mouseX = clientX;
+        this.mouseY = clientY;
         this.velX = this.mouseX - this.prevMouseX;
         this.velY = this.mouseY - this.prevMouseY;
       }
-      const dirX = e.clientX - this.mouseTouchX;
-      const dirY = e.clientY - this.mouseTouchY;
+      const dirX = clientX - this.mouseTouchX;
+      const dirY = clientY - this.mouseTouchY;
       const dirLength = Math.sqrt(dirX * dirX + dirY * dirY);
       const dirNormalizedX = dirX / dirLength;
       const dirNormalizedY = dirY / dirLength;
@@ -37,6 +43,7 @@ class Paper {
       if (this.rotating) {
         this.rotation = degrees;
       }
+
       if (this.holdingPaper) {
         if (!this.rotating) {
           this.currentPaperX += this.velX;
@@ -46,36 +53,48 @@ class Paper {
         this.prevMouseY = this.mouseY;
         paper.style.transform = `translateX(${this.currentPaperX}px) translateY(${this.currentPaperY}px) rotateZ(${this.rotation}deg)`;
       }
-    });
+    };
 
-    paper.addEventListener('mousedown', (e) => {
-      if (!this.holdingPaper) {
-        this.holdingPaper = true;
-        paper.style.zIndex = highestZ;
-        highestZ += 1;
+    // Add event listeners for mouse and touch events
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('touchmove', moveHandler);
 
-        // Play the audio if it hasn't been played yet
-        if (!audioPlayed) {
-          audioElement.play();
-          audioPlayed = true; // Set the flag to true to prevent re-playing
-        }
+    const startHandler = (e) => {
+      if (this.holdingPaper) return;
+      this.holdingPaper = true;
+      paper.style.zIndex = highestZ;
+      highestZ += 1;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        if (e.button === 0) {
-          this.mouseTouchX = this.mouseX;
-          this.mouseTouchY = this.mouseY;
-          this.prevMouseX = this.mouseX;
-          this.prevMouseY = this.mouseY;
-        }
-        if (e.button === 2) {
-          this.rotating = true;
-        }
+      this.mouseTouchX = clientX;
+      this.mouseTouchY = clientY;
+      this.prevMouseX = clientX;
+      this.prevMouseY = clientY;
+
+      if (!audioPlayed) {
+        audio.play().then(() => {
+          audioPlayed = true; // Set the flag once the audio starts playing
+        }).catch((error) => {
+          console.error('Audio playback failed:', error);
+        });
       }
-    });
 
-    window.addEventListener('mouseup', () => {
+      if (e.type === 'mousedown' && e.button === 2) {
+        this.rotating = true;
+      }
+    };
+
+    paper.addEventListener('mousedown', startHandler);
+    paper.addEventListener('touchstart', startHandler);
+
+    const endHandler = () => {
       this.holdingPaper = false;
       this.rotating = false;
-    });
+    };
+
+    window.addEventListener('mouseup', endHandler);
+    window.addEventListener('touchend', endHandler);
   }
 }
 
